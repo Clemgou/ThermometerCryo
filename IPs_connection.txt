@@ -1,0 +1,2 @@
+IP3='192.168.1.103' # thermometre haute temperature  ou thermonico 119
+IP1='192.168.1.101' # thermometre basse temperature 101
