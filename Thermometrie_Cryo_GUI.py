@@ -27,8 +27,8 @@ import pyqtgraph.dockarea           as pg_dock
 import PyQt5
 from PyQt5.QtWidgets    import QMainWindow, QWidget, QApplication, QPushButton, QToolButton, QStyle, QLabel, QCheckBox, QInputDialog, QComboBox, QFrame, QSpinBox, QDoubleSpinBox, QLineEdit, QTabWidget, QDockWidget, QFileDialog, QDialog
 from PyQt5.QtWidgets    import QHBoxLayout, QVBoxLayout, QGridLayout, QSplitter   # main layouts
-from PyQt5.QtGui        import QPixmap, QPaintDevice, QPainter
-from PyQt5.QtCore       import Qt
+from PyQt5.QtGui        import QPixmap, QPaintDevice, QPainter, QIcon
+from PyQt5.QtCore       import Qt, QSize
 
 ##############################################################################################################
 # FUNCTION
@@ -45,6 +45,10 @@ class MainWindow(QMainWindow):
         self.main_widget = ThermometerMonitoring(verbose=self.verbose, **kwargs)
         self.setCentralWidget(self.main_widget)
         # ---  --- #
+        self.setWindowTitle("Cryostat thermometry")
+        self.path_abs = os.path.dirname(os.path.abspath(__file__)) + '/'
+        self.setWindowIcon(QIcon(self.path_abs+'icon.png'))
+        self.setIconSize(QSize(32,32))
         self.show()
 
 class ThermometerMonitoring(QWidget):
@@ -212,6 +216,7 @@ class ThermometerMonitoring(QWidget):
             self.tempDispl['Devices'][probe_id]['resistance'].valueChanged.connect(       self.func_factory(self.doConversion      , probe_id))
             self.tempDispl['Devices'][probe_id]['probe_type'].currentIndexChanged.connect(self.func_factory(self.doConversion      , probe_id))
             self.tempDispl['Devices'][probe_id]['probe_type'].currentIndexChanged.connect(self.func_factory(self.doConversionBuffer, probe_id))
+            self.tempDispl['Devices'][probe_id]['probe_type'].currentIndexChanged.connect(self.func_factory(self.toggleThreshButton, probe_id)) # enable/disable the threshold button
             self.tempDispl['Devices'][probe_id]['Temp_thresh'].stateChanged.connect(self.setResistanceValue)
             self.tempDispl['Devices'][probe_id]['Temp_thresh'].stateChanged.connect(self.func_factory(self.doConversionBuffer, probe_id) )
             # ---
@@ -605,6 +610,7 @@ class ThermometerMonitoring(QWidget):
             t_  = self.getTime()#-self.time_0
             # ---  --- #
             if not res: # if res is None, i.e measure did not work
+                print('Error in measureResistance: measure of resistance did not work, returning a random value around 500 Ohm.')
                 res = 500 + np.random.random()*10
             # ---  --- #
             temp = self.convertResToTemp(res, type=self.tempDispl['Devices'][probe_id]['probe_type'].currentText(), above70K=self.tempDispl['Devices'][probe_id]['Temp_thresh'].isChecked())
@@ -641,6 +647,18 @@ class ThermometerMonitoring(QWidget):
         # ---  --- #
         self.updateGraphs()
 
+    def toggleThreshButton(self, probe_id):
+        '''
+        * Enable/Disable the threshold > 70K button for the probes that does not
+          need it.
+        * The probes that are in need of it are: "Mobile BT", "Mobile HT".
+        * One can check in the 'convertResToTemp' method.
+        '''
+        if self.tempDispl['Devices'][probe_id]['probe_type' ].currentText() in ["Mobile BT", "Mobile HT"]:
+            self.tempDispl['Devices'][probe_id]['Temp_thresh'].setEnabled(True)
+        else:
+            self.tempDispl['Devices'][probe_id]['Temp_thresh'].setEnabled(False)
+
     def convertResToTemp(self, res, **kwargs):
         '''
         From the kwargs arguments, will return the temperature corresponding to the right probe parameters,
@@ -657,11 +675,13 @@ class ThermometerMonitoring(QWidget):
             try:
                 T = scipy.optimize.newton( (lambda T:ThermoBTRvsT(T)-res) , 200 if above70K else 0.02)
             except RuntimeError:
+                print('RuntimeError in convertResToTemp: no value found with scipy.optimize.newton.')
                 T = 500
         elif probe_type in ["Mobile HT"]: # reference HT C100-PT100
             try:
                 T = scipy.optimize.newton( (lambda T:ThermoHTRvsT(T)-res) , 200 if above70K else 2)
             except RuntimeError:
+                print('RuntimeError in convertResToTemp: no value found with scipy.optimize.newton.')
                 T = 500
         elif probe_type in ["NICO BT CAL"]: # Thermo NICO
             T = ThermoNICOCALTvsR(res)

@@ -30,7 +30,7 @@ class ResistanceProbe():
         self.verbose = kwargs.pop('verbose', False)
         # ---  --- #
         self.data = None
-        self.UDP_query = QtNetwork.QUdpSocket()      # le canal sur lequel on envoie les demandes
+        self.UDP_query = QtNetwork.QUdpSocket()     # le canal sur lequel on envoie les demandes
         self.UDP_resp  = QtNetwork.QUdpSocket()     # le canal de lecture
         # ---  --- #
         udp_q_bound_success = self.UDP_query.bind(8001)
