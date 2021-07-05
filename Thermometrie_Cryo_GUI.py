@@ -9,11 +9,13 @@ import numpy as np
 import time, scipy
 import scipy.optimize
 
+from pathlib import Path, PureWindowsPath
+
 import sys, os
 sys.path.append('./')
 
 
-from lib.Miscellaneous              import getIPFromTxt
+from lib.Miscellaneous              import getIPFromTxt, fixpath
 from lib.PyQt_miscellaneous         import QHLine, QVLine
 from lib.Conversion_functions       import PT100TvsR, ThermoBTTvsR, ThermoNICOTvsR, PT100RvsT, C100RvsT, RuO2RvsT, ThermoBTRvsT, ThermoHTRvsT, ThermoNICOCALTvsR
 from lib.ResistanceProbe_class      import ResistanceProbe
@@ -162,9 +164,19 @@ class ThermometerMonitoring(QWidget):
         '''
         filename = self.topBar_dic['save_file'].text()
         format_  = self.topBar_dic['Data_save_type'].currentText()
-        path     = self.topBar_dic['save_dir_label'].text() + '/'
+        path     = self.topBar_dic['save_dir_label'].text() + r'/'
+        # --- check if directory exists
+        if not os.path.isdir(path): # if directory does not exist because the date changed.
+            os.mkdir(path)
+        # --- check if file already exists --- #
+        filename_L = os.listdir(path)
         # ---
-        path_to_file = path+filename+'.'+format_
+        if '{}.{}'.format(filename,format_) in filename_L:
+            same_count = np.array([filename in fname_var for fname_var in os.listdir(path)]).sum()
+            # ---
+            filename  += '_{:d}'.format(same_count)
+        # ---
+        path_to_file = '{}{}.{}'.format(path,filename,format_)
         # ---  --- #
         if format_ == 'txt':
             if not os.path.isfile(path_to_file): # if the file doesn't exist
@@ -250,6 +262,8 @@ class ThermometerMonitoring(QWidget):
         self.topBar_dic['Data_save_type'] = QComboBox()
         self.topBar_dic['Data_save_type'].addItems(['txt', 'asdf (to do)'])
         self.topBar_dic['Data_save_type'].setMaximumWidth(80)
+        self.topBar_dic['auto_save']      = QCheckBox()
+        self.topBar_dic['auto_save'].setTristate(False)
         # ---
         self.topBar_dic['save_dir']       = QFileDialog()
         self.topBar_dic['save_dir_label'] = QLabel( str(self.topBar_dic['save_dir'].directory().path()) )
@@ -266,6 +280,14 @@ class ThermometerMonitoring(QWidget):
         self.topBar_dic['fps_input'].setMaximumWidth(100)
         self.topBar_dic['fps_input'].setValue(self.fps)
         # ---  --- #
+        sublayout_1 = QHBoxLayout()
+        sublayout_2 = QVBoxLayout()
+        sublayout_1.addWidget(QLabel('Auto save : '))
+        sublayout_1.addWidget(self.topBar_dic['auto_save'])
+        sublayout_2.addLayout(sublayout_1)
+        sublayout_2.addWidget(self.topBar_dic['save_bttn'])
+        # ---
+        self.topBar_dic['layout'].addWidget(self.topBar_dic['play_bttn'])
         self.topBar_dic['layout'].addWidget(self.topBar_dic['play_bttn'])
         self.topBar_dic['layout'].addWidget(self.topBar_dic['step_bttn'])
         self.topBar_dic['layout'].addWidget(self.topBar_dic['fps_input'])
@@ -273,7 +295,7 @@ class ThermometerMonitoring(QWidget):
         self.topBar_dic['layout'].addWidget(QVLine())
         self.topBar_dic['layout'].addWidget(self.topBar_dic['state'])
         self.topBar_dic['layout'].addWidget(QVLine())
-        self.topBar_dic['layout'].addWidget(self.topBar_dic['save_bttn'])
+        self.topBar_dic['layout'].addLayout(sublayout_2)#.addWidget(self.topBar_dic['save_bttn'])
         self.topBar_dic['layout'].addWidget(QLabel('Save File :'))
         self.topBar_dic['layout'].addWidget(self.topBar_dic['save_file'])
         self.topBar_dic['layout'].addWidget(self.topBar_dic['Data_save_type'])
@@ -524,6 +546,13 @@ class ThermometerMonitoring(QWidget):
         self.updateGraphs()
         # ---  --- #
         self.topBar_dic['state'].nextState()
+        # ---  --- #
+        if self.nbr_measure==self.graph_dic['buffer_size'].value():
+            self.nbr_measure = 0
+            if self.topBar_dic['auto_save'].isChecked():
+                self.saveData()
+
+
 
     def updateGraphDisplayStyle(self, idx):
         '''
@@ -602,6 +631,11 @@ class ThermometerMonitoring(QWidget):
         return round(time.time(), 3)
 
     def epochToDate(self, t_epoch):
+        '''
+        * Convert an epoch time number to a readable date in YYYY-MM-DD_hh:mm:ss:msss
+          format.
+        '''
+        print(t_epoch)
         return '{0:04d}-{1:02d}-{2:02d}_{3:02d}:{4:02d}:{5:02d}:{6:03d}'.format(*time.localtime(t_epoch)[:6], int((t_epoch%1) * 1e3))
 
     def measureResistance(self):
@@ -733,8 +767,8 @@ class ThermometerMonitoring(QWidget):
         self.N_buffer = int(new_size)
         # ---  --- #
         for i,key in enumerate(self.probes.probes):
-            self.buffer_data[key]['buffer']['time'].change_length(       self.N_buffer, default_val=self.buffer_dflt)
-            self.buffer_data[key]['buffer']['resistance'].change_length( self.N_buffer, default_val=self.buffer_dflt)
+            self.buffer_data[key]['buffer']['time'       ].change_length(self.N_buffer, default_val=self.buffer_dflt)
+            self.buffer_data[key]['buffer']['resistance' ].change_length(self.N_buffer, default_val=self.buffer_dflt)
             self.buffer_data[key]['buffer']['temperature'].change_length(self.N_buffer, default_val=self.buffer_dflt)
 
     def setTimeWindowLabel(self):

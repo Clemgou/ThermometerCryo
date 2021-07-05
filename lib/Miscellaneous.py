@@ -13,10 +13,10 @@
 
 def getIPFromTxt(path_to_file):
     '''
-    Go to a txt file at path_to_file and returns a dictionary of IP addresses in the file.
-    In the txt file we expect to have the data in the form:
-        IP_name = 'IP_address' (# comments)
-    where the parenthesis indicates non necessary features.
+    * Go to a txt file at path_to_file and returns a dictionary of IP addresses in the file.
+    * In the txt file we expect to have the data in the form:
+          IP_name = 'IP_address' (# comments)
+      where the parenthesis indicates non necessary features.
     '''
     IP_dic = {}
     # ---  --- #
@@ -29,6 +29,14 @@ def getIPFromTxt(path_to_file):
             IP_dic[key] = val
     #---  --- #
     return IP_dic
+
+
+import os
+def fixpath(path):
+    '''
+    * Convert a path to a usable windows path in python.
+    '''
+    return os.path.abspath(os.path.expanduser(path))
 
 ##############################################################################################################
 # MAIN
