@@ -192,7 +192,7 @@ class ThermometerMonitoring(QWidget):
                 # ---  --- #
                 for j in range(self.N_buffer):
                     for i,key in enumerate(self.probes.probes):
-                        t_date = self.epochToDate(self.buffer_data[key]['buffer']['time'][j])
+                        t_date = self.epochToDate(self.buffer_data[key]['buffer']['time'][j]) if self.buffer_data[key]['buffer']['time'][j]!=-1 else 'None'
                         str_write += '{0:}\t{1:}\t{2:}\t'.format(t_date, self.buffer_data[key]['buffer']['resistance'][j], self.buffer_data[key]['buffer']['temperature'][j])
                     # ---  --- #
                     str_write += '\n'
