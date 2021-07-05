@@ -549,10 +549,10 @@ class ThermometerMonitoring(QWidget):
         # ---  --- #
         if self.nbr_measure==self.graph_dic['buffer_size'].value():
             self.nbr_measure = 0
+            # ---
             if self.topBar_dic['auto_save'].isChecked():
+                print( 'Auto-save at : {0:04d}-{1:02d}-{2:02d}_{3:02d}:{4:02d}:{5:02d}'.format(*time.localtime(time.time())[:6]) )
                 self.saveData()
-
-
 
     def updateGraphDisplayStyle(self, idx):
         '''
@@ -635,7 +635,6 @@ class ThermometerMonitoring(QWidget):
         * Convert an epoch time number to a readable date in YYYY-MM-DD_hh:mm:ss:msss
           format.
         '''
-        print(t_epoch)
         return '{0:04d}-{1:02d}-{2:02d}_{3:02d}:{4:02d}:{5:02d}:{6:03d}'.format(*time.localtime(t_epoch)[:6], int((t_epoch%1) * 1e3))
 
     def measureResistance(self):
