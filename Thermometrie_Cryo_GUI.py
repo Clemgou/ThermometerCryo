@@ -173,6 +173,8 @@ class ThermometerMonitoring(QWidget):
             same_count = np.array([filename in fname_var for fname_var in os.listdir(path)]).sum()
             # ---
             filename  += '_{:d}'.format(same_count)
+        elif self.topBar_dic['auto_save'].isChecked():
+            filename  += '_{:d}'.format(0) # add _0 to the auto_save filename if none already exists.
         # ---
         path_to_file = '{}{}.{}'.format(path,filename,format_)
         # ---  --- #
