@@ -165,6 +165,9 @@ class ThermometerMonitoring(QWidget):
         filename = self.topBar_dic['save_file'].text()
         format_  = self.topBar_dic['Data_save_type'].currentText()
         path     = self.topBar_dic['save_dir_label'].text() + r'/'
+        # --- autosave name
+        if self.topBar_dic['auto_save'].isChecked():
+            filename = 'auto_save_{0:04d}-{1:02d}-{2:02d}'.format(*time.localtime(time.time())[:3])
         # --- check if directory exists
         if not os.path.isdir(path): # if directory does not exist because the date changed.
             os.mkdir(path)
@@ -643,7 +646,7 @@ class ThermometerMonitoring(QWidget):
             t_  = self.getTime()#-self.time_0
             # ---  --- #
             if not res: # if res is None, i.e measure did not work
-                print('Error in measureResistance: measure of resistance did not work, returning a random value around 500 Ohm.')
+                print('[{:s}] Error in measureResistance: measure of resistance did not work, returning a random value around 500 Ohm.'.format( self.epochToDate(time.time())[:-4] ))
                 res = 500 + np.random.random()*10
             # ---  --- #
             temp = self.convertResToTemp(res, type=self.tempDispl['Devices'][probe_id]['probe_type'].currentText(), above70K=self.tempDispl['Devices'][probe_id]['Temp_thresh'].isChecked())
