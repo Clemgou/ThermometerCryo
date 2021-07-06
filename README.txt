@@ -9,6 +9,9 @@ Required python module:
 
 
 TO DO:
+	- Relevant error management when resistance measurement fails. Currently returning last maesured value, but in
+	  most case it would be more interesting to have a default value (nan, or None by expl) that will not break the
+	  temperature conversion fonctions either.
         - ResistanceProbe_class using a stream package
         - Make Conversion functions that are more versatile (accept np.arrays), and without optimization algorithms
         - combo box to display all temperature plot in parallel

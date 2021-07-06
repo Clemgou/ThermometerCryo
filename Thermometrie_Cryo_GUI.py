@@ -153,7 +153,7 @@ class ThermometerMonitoring(QWidget):
         for i, multiplot_name in enumerate(self.graph_dic['multiplots']):
             self.graph_dic['multiplots'][multiplot_name]['data_items'][probe_id].setData(name=new_name)
 
-    def saveData(self):
+    def saveData(self, filename):
         '''
         Save the data of the resistance in an external file.
         The convention for a txt file is :
@@ -162,19 +162,14 @@ class ThermometerMonitoring(QWidget):
                               .     .     .
         where the t_i are the time, and Ri_j are the measured resistance at ti_j.
         '''
-        filename = self.topBar_dic['save_file'].text()
         format_  = self.topBar_dic['Data_save_type'].currentText()
         path     = self.topBar_dic['save_dir_label'].text() + r'/'
-        # --- autosave name
-        if self.topBar_dic['auto_save'].isChecked():
-            filename = 'auto_save_{0:04d}-{1:02d}-{2:02d}'.format(*time.localtime(time.time())[:3])
-        # --- check if directory exists
-        if not os.path.isdir(path): # if directory does not exist because the date changed.
+        # --- check if directory exists        if not os.path.isdir(path): # if directory does not exist because the date changed.
             os.mkdir(path)
         # --- check if file already exists --- #
         filename_L = os.listdir(path)
         # ---
-        if '{}.{}'.format(filename,format_) in filename_L:
+        if '{}.{}'.format(filename, format_) in filename_L:
             same_count = np.array([filename in fname_var for fname_var in os.listdir(path)]).sum()
             # ---
             filename  += '_{:d}'.format(same_count)
@@ -223,7 +218,7 @@ class ThermometerMonitoring(QWidget):
         self.topBar_dic['fps_input'].valueChanged.connect(self.setFPS)
         self.topBar_dic['fps_input'].valueChanged.connect(self.setTimeWindowLabel)
         self.topBar_dic['save_dir_bttn'].clicked.connect( lambda : self.chooseNewDirectory(self.topBar_dic['save_dir'], self.topBar_dic['save_dir_label']) )
-        self.topBar_dic['save_bttn'].clicked.connect( self.saveData )
+        self.topBar_dic['save_bttn'].clicked.connect( lambda : self.saveData(filename=self.topBar_dic['save_file'].text()) )
         # ---
         #self.tempDispl['Temp_thresh'].stateChanged.connect(self.setResistanceValue)
         #self.tempDispl['Temp_thresh'].stateChanged.connect(lambda: next(self.doConversionBuffer(self.tempDispl['Devices'][probe]) for probe in self.tempDispl['Devices']) )
@@ -555,7 +550,8 @@ class ThermometerMonitoring(QWidget):
             # ---
             if self.topBar_dic['auto_save'].isChecked():
                 print( 'Auto-save at : {0:04d}-{1:02d}-{2:02d}_{3:02d}:{4:02d}:{5:02d}'.format(*time.localtime(time.time())[:6]) )
-                self.saveData()
+                # ---
+                self.saveData( filename='auto_save_{0:04d}-{1:02d}-{2:02d}'.format(*time.localtime(time.time())[:3]) )
 
     def updateGraphDisplayStyle(self, idx):
         '''
@@ -646,16 +642,17 @@ class ThermometerMonitoring(QWidget):
             t_  = self.getTime()#-self.time_0
             # ---  --- #
             if not res: # if res is None, i.e measure did not work
-                print('[{:s}] Error in measureResistance: measure of resistance did not work, returning a random value around 500 Ohm.'.format( self.epochToDate(time.time())[:-4] ))
-                res = 500 + np.random.random()*10
+                #print('[{:s}] Error in measureResistance: measure of resistance did not work, returning a random value around 500 Ohm.'.format( self.epochToDate(time.time())[:-4] ))
+                print('[{:s}] Error in measureResistance: measure of resistance did not work, returning last measrued value.'.format( self.epochToDate(time.time())[:-4] ))
+                res = self.buffer_data[probe_id]['last']['resistance'] # 500 + np.random.random()*10
             # ---  --- #
             temp = self.convertResToTemp(res, type=self.tempDispl['Devices'][probe_id]['probe_type'].currentText(), above70K=self.tempDispl['Devices'][probe_id]['Temp_thresh'].isChecked())
             # ---  --- #
-            self.buffer_data[probe_id]['last']['resistance']  = res
-            self.buffer_data[probe_id]['last']['time']        = t_
+            self.buffer_data[probe_id]['last'  ]['resistance']  = res
+            self.buffer_data[probe_id]['last'  ]['time'      ]  = t_
             # ---
-            self.buffer_data[probe_id]['buffer']['time'].push_element(t_)
-            self.buffer_data[probe_id]['buffer']['resistance'].push_element(res)
+            self.buffer_data[probe_id]['buffer']['time'       ].push_element(t_)
+            self.buffer_data[probe_id]['buffer']['resistance' ].push_element(res)
             self.buffer_data[probe_id]['buffer']['temperature'].push_element(temp)
         # ---  --- #
         self.setResistanceValue()
