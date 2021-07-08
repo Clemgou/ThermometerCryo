@@ -266,8 +266,7 @@ def ThermoBT_TvsR_spln(R, above70K=False, **kwargs):
 
 # ====== old version ====== #
 
-
-
+'''
 def ThermoBTTvsR(R):
     '''
     Returns a scalar or an array, depending of the type of the arguments
@@ -351,17 +350,7 @@ def ThermoBTRvsT(T):
 
 def ThermoHTRvsT(T):
     return 1.01625*C100RvsT(T)+PT100RvsT(T)
-
-
-
-
-
-
-
-
-
-
-
+'''
 
 # ====== old version ====== #
 
