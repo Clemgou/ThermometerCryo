@@ -87,7 +87,7 @@ class ResistanceProbe():
         self.resistance = None # initiate the resistance value at None in case the query doesn't work, so that we don't have an old value.
         # ---  --- #
         query = "MACRTGET {0}".format((sonde-1)*11+3)
-        port = 12000 +int(IP[-3:], 10)
+        port  = 12000 +int(IP[-3:], 10)
         try:
             print(query, IP, port) if self.verbose else None
             out_ = self.UDP_query.writeDatagram(query.encode(), QtNetwork.QHostAddress(IP), port)

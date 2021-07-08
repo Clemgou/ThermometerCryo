@@ -17,7 +17,7 @@ sys.path.append('./')
 
 from lib.Miscellaneous              import getIPFromTxt, fixpath
 from lib.PyQt_miscellaneous         import QHLine, QVLine
-from lib.Conversion_functions       import PT100TvsR, ThermoBTTvsR, ThermoNICOTvsR, PT100RvsT, C100RvsT, RuO2RvsT, ThermoBTRvsT, ThermoHTRvsT, ThermoNICOCALTvsR
+from lib.Conversion_functions       import PT100TvsR, ThermoBTTvsR, ThermoNICOTvsR, PT100RvsT, C100RvsT, RuO2RvsT, ThermoBTRvsT, ThermoHTRvsT, ThermoNICOCALTvsR, ThermoBT_TvsR_spln
 from lib.ResistanceProbe_class      import ResistanceProbe
 from lib.MyRunningAnimation_class   import MyRunningAnimation
 from lib.Buffer_class               import Buffer
@@ -164,7 +164,8 @@ class ThermometerMonitoring(QWidget):
         '''
         format_  = self.topBar_dic['Data_save_type'].currentText()
         path     = self.topBar_dic['save_dir_label'].text() + r'/'
-        # --- check if directory exists        if not os.path.isdir(path): # if directory does not exist because the date changed.
+        # --- check if directory exists
+        if not os.path.isdir(path): # if directory does not exist because the date changed.
             os.mkdir(path)
         # --- check if file already exists --- #
         filename_L = os.listdir(path)
@@ -244,7 +245,7 @@ class ThermometerMonitoring(QWidget):
         self.buffer_data['data_type'] = {'resistance':1, 'temperature':2}
         # ---  --- #
         for i,key in enumerate(self.probes.probes):
-            self.buffer_data[key] = {'last'  : {'time':None, 'resistance':None},
+            self.buffer_data[key] = {'last'  : {'time':None, 'resistance':self.buffer_dflt},
                                      'buffer': {'time': Buffer([self.buffer_dflt]*self.N_buffer), 'resistance': Buffer([self.buffer_dflt]*self.N_buffer), 'temperature': Buffer([self.buffer_dflt]*self.N_buffer)}}
 
     def makeTopBarWidget(self):
@@ -646,7 +647,7 @@ class ThermometerMonitoring(QWidget):
             if not res: # if res is None, i.e measure did not work
                 #print('[{:s}] Error in measureResistance: measure of resistance did not work, returning a random value around 500 Ohm.'.format( self.epochToDate(time.time())[:-4] ))
                 print('[{:s}] Error in measureResistance: measure of resistance did not work, returning last measrued value.'.format( self.epochToDate(time.time())[:-4] ))
-                res = self.buffer_data[probe_id]['last']['resistance'] # 500 + np.random.random()*10
+                res  = self.buffer_data[probe_id]['last']['resistance'] # 500 + np.random.random()*10
             # ---  --- #
             temp = self.convertResToTemp(res, type=self.tempDispl['Devices'][probe_id]['probe_type'].currentText(), above70K=self.tempDispl['Devices'][probe_id]['Temp_thresh'].isChecked())
             # ---  --- #
@@ -675,6 +676,9 @@ class ThermometerMonitoring(QWidget):
         self.tempDispl['Devices'][probe_id]['temperature'].setText('{:.4f}'.format(Temp_K))
 
     def doConversionBuffer(self, probe_id):
+        '''
+        * Convert all res to temp from buffer.
+        '''
         # ---  --- #
         for i,val in enumerate(self.buffer_data[probe_id]['buffer']['resistance']):
             if val!=self.buffer_dflt:
@@ -707,11 +711,13 @@ class ThermometerMonitoring(QWidget):
             return None
         # ---  --- #
         if   probe_type in ["Mobile BT"]: # reference BT RuO2 C100 PT100, (pour le moment, ne l'utiliser qu'a haute temperature)
-            try:
-                T = scipy.optimize.newton( (lambda T:ThermoBTRvsT(T)-res) , 200 if above70K else 0.02)
-            except RuntimeError:
-                print('RuntimeError in convertResToTemp: no value found with scipy.optimize.newton.')
-                T = 500
+            #try:
+            #    T = scipy.optimize.newton( (lambda T:ThermoBTRvsT(T)-res) , 200 if above70K else 0.02)
+            #except RuntimeError:
+            #    print('RuntimeError in convertResToTemp: no value found with scipy.optimize.newton.')
+            #    T = 500
+            ## ---
+            T = ThermoBT_TvsR_spln(res, above70K=above70K)
         elif probe_type in ["Mobile HT"]: # reference HT C100-PT100
             try:
                 T = scipy.optimize.newton( (lambda T:ThermoHTRvsT(T)-res) , 200 if above70K else 2)
