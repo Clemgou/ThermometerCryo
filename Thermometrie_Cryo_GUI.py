@@ -170,8 +170,8 @@ class ThermometerMonitoring(QWidget):
         # --- check if file already exists --- #
         filename_L = os.listdir(path)
         # ---
-        if '{}.{}'.format(filename, format_) in filename_L:
-            same_count = np.array([filename in fname_var for fname_var in os.listdir(path)]).sum()
+        same_count = np.array([filename in fname_var for fname_var in filename_L]).sum() # check if a file has a filename contained in it.
+        if same_count!=0:
             # ---
             filename  += '_{:d}'.format(same_count)
         elif self.topBar_dic['auto_save'].isChecked():
