@@ -789,7 +789,7 @@ class ThermometerMonitoring(QWidget):
             xdata = self.buffer_data[key]['buffer']['time'    ][-display_idx:]
             ydata = self.buffer_data[key]['buffer'][which_data][-display_idx:]
             # ---  --- #
-            self.graph_dic['probes'][key]['data'].setData(x=xdata, y=ydata)
+            self.graph_dic['probes'][key]['data'].setData(x=np.array(xdata)[~np.isnan(ydata)], y=np.array(ydata)[~np.isnan(ydata)])
             # ---  --- #
             for name, multiplot in self.graph_dic['multiplots'].items():
                 multiplot['data_items'][key].setData(x=self.graph_dic['probes'][key]['data'].xData,

@@ -215,6 +215,8 @@ def ThermoBT_TvsR_spln(R, above70K=False, **kwargs):
     '''
     verbose  = kwargs.pop('verbose', False)
     dR_bnd   = kwargs.pop('dR_bnd' , 1e-5) # [Ohm]
+    R_inv    = kwargs.pop('R_inv'  , ThermoBT_RvsT(7e+1))
+    T_inv    = kwargs.pop('T_inv'  , np.nan)
     # --- Spline coefficient and domain definition --- #
     spln_dic = {
         0 : {'above70K':True , 'boundary': [ThermoBT_RvsT(7e1), 137.43235776204997], 'coeff': (70.0, 22.52365474990894, -6.9770467433559284, 0.8742043290186831)},
@@ -245,7 +247,7 @@ def ThermoBT_TvsR_spln(R, above70K=False, **kwargs):
     # --- Set out of range default values
     T[R_>ThermoBT_RvsT(1e+4)] += 1e4*above70K
     T[R_>ThermoBT_RvsT(1e-3)] += 1e-3*(not above70K)
-    T[R_<ThermoBT_RvsT(7e+1)]  = np.nan
+    T[R_<R_inv              ]  = T_inv
     # --- Computing T from splines
     for spl_key in spln_dic:
         R_b     = spln_dic[spl_key]['boundary']
