@@ -17,7 +17,7 @@ sys.path.append('./')
 
 from lib.Miscellaneous              import getIPFromTxt, fixpath
 from lib.PyQt_miscellaneous         import QHLine, QVLine
-from lib.Conversion_functions       import PT100_TvsR, ThermoBT_TvsR, ThermoNICO_TvsR, PT100_RvsT, C100_RvsT, RuO2_RvsT, ThermoBT_RvsT, ThermoHT_RvsT, ThermoNICOCAL_TvsR, ThermoBT_TvsR_spln
+from lib.Conversion_functions       import PT100_TvsR, ThermoBT_TvsR, ThermoNICO_TvsR, PT100_RvsT, C100_RvsT, RuO2_RvsT, ThermoBT_RvsT, ThermoHT_RvsT, ThermoNICOCAL_TvsR, ThermoBT_TvsR_spln, ThermoHT_TvsR_spln
 from lib.ResistanceProbe_class      import ResistanceProbe
 from lib.MyRunningAnimation_class   import MyRunningAnimation
 from lib.Buffer_class               import Buffer
@@ -716,14 +716,16 @@ class ThermometerMonitoring(QWidget):
             #except RuntimeError:
             #    print('RuntimeError in convertResToTemp: no value found with scipy.optimize.newton.')
             #    T = 500
-            ## ---
+            # ---
             T = ThermoBT_TvsR_spln(res, above70K=above70K)
         elif probe_type in ["Mobile HT"]: # reference HT C100-PT100
-            try:
-                T = scipy.optimize.newton( (lambda T:ThermoHT_RvsT(T)-res) , 200 if above70K else 2)
-            except RuntimeError:
-                print('RuntimeError in convertResToTemp: no value found with scipy.optimize.newton.')
-                T = 500
+            #try:
+            #    T = scipy.optimize.newton( (lambda T:ThermoHT_RvsT(T)-res) , 200 if above70K else 2)
+            #except RuntimeError:
+            #    print('RuntimeError in convertResToTemp: no value found with scipy.optimize.newton.')
+            #    T = 500
+            # ---
+            T = ThermoHT_TvsR_spln(res, above70K=above70K)
         elif probe_type in ["NICO BT CAL"]: # Thermo NICO
             T = ThermoNICOCAL_TvsR(res)
         elif probe_type in ["NICO BT"]: # Thermo NICO
