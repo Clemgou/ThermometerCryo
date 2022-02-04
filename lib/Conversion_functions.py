@@ -27,16 +27,22 @@ def PT100_RvsT(T, **kwargs):
     # ---  --- #
     return a*T**3 + b*T**2 + c*T + d
 
-def C100_RvsT(T):
+def C100_RvsT(T, **kwargs):
     '''
     * Returns a scalar or an array, depending of the type of the arguments
     * Resistance function defined only above 1K. Bellow, the resistance diverges,
       we thus set it to 1e6 Ohms by default.
     '''
+    R1    = kwargs.pop('R0',  37.4)
+    R0    = kwargs.pop('R0',  42.8)
+    T0    = kwargs.pop('T0',  0.43)
+    T1    = kwargs.pop('T1',  42.8)
+    alpha = kwargs.pop('mu',-0.476)
+    # ---  --- #
     T_ = np.array(T, ndmin=1)
     R  = np.ones(T_.shape)*1e6 # 1e6 is the default R value when T<1 K.
     # ---  --- #
-    R[T_>1] = 37.4 + 42.8* np.exp( ((T_[T_>1] - 0.43)/42.8)**(-0.476))
+    R[T_>1] = R0*np.exp( ((T_[T_>1]-T0)/T1)**alpha) + R1
     R       = R.real
     # ---  --- #
     return R[0] if R.size == 1 else R
@@ -46,9 +52,9 @@ def RuO2_RvsT(T, **kwargs):
     * Resistance of a resistor made of RuO2 material.
     * Defined for all the Temperature range.
     '''
-    a     = kwargs.pop('a'    ,   0.01                )
     R0    = kwargs.pop('R0'   , 864.3237440617243     )
     T0    = kwargs.pop('T0'   ,   0.8839588539497837  )
+    a     = kwargs.pop('a'    ,   0.01                )
     alpha = kwargs.pop('alpha',  -0.33621556108985157 ) # -1/2.9742823228005086
     # ---  --- #
     T_ = np.array(T, ndmin=1)
@@ -77,20 +83,31 @@ def ThermoHT_RvsT(T):
 
 # ====== function R --> T ====== #
 
-def ThermoBT_TvsR(R):
+def ThermoBT_TvsR(R, **kwargs):
     '''
     * Returns a scalar or an array, depending of the type of the arguments
     * For mobile BM BT RuO2 C100 PT100, (a utiliser uniquement a basse
-      temperature pour les thermometres mobiles)
+      temperature pour les thermometres mobiles), since it is an asymptotic
+      estimation that works at LT.
     * Seulement utile pour faire une conversion rapide, sans optimize.newton
+    * To use a Low temperature, i.e << 70K
     '''
+    a1 = kwargs.pop('a1', +13.9942)
+    b1 = kwargs.pop('b1', +116.928)
+    c1 = kwargs.pop('c1', -1.09771)
+    d1 = kwargs.pop('d1', -3.54293)
+    a2 = kwargs.pop('a2', +3.01749)
+    b2 = kwargs.pop('b2', +436.589)
+    c2 = kwargs.pop('c2', -3.53959)
+    d2 = kwargs.pop('d2', -0.0219203)
+    # ---  --- #
     R_ = np.array(R, ndmin=1)
     T  = np.zeros(R_.shape)
     # ---  --- #
     thrs_idx1    = R_< 1464.4
     thrs_idx2    = R_>=1464.4
-    T[thrs_idx1] = 13.9942*(np.log(R_[thrs_idx1]/116.928)**(-1.09771)) - 3.54293
-    T[thrs_idx2] = 3.01749*(np.log(R_[thrs_idx2]/436.589)**(-3.53959)) - 0.0219203
+    T[thrs_idx1] = a1*(np.log(R_[thrs_idx1]/b1)**c1) + d1
+    T[thrs_idx2] = a2*(np.log(R_[thrs_idx2]/b2)**c2) + d2
     # ---  --- #
     return T[0] if T.size == 1 else T
 
@@ -317,9 +334,32 @@ def ThermoHT_TvsR_spln(R, above70K=False, **kwargs):
 
 
 
+# ====== Global conversion ====== #
 
-
-
+def convert_RtoT(R, **kwargs):
+    '''
+    '''
+    verbose    = kwargs.pop('verbose'   , False)
+    probe_type = kwargs.pop('probe_type', 'Mobile BM')
+    above70K   = kwargs.pop('above70K'  , False)
+    T_dflt     = kwargs.pop('T_dflt'    , 500) # [K]
+    # ---  --- #
+    if   probe_type in ["Mobile BT"]: # reference BT RuO2 C100 PT100, (pour le moment, ne l'utiliser qu'a haute temperature)
+        #T = ThermoBT_TvsR_root(R, above70K=above70K, T_dflt=T_dflt)
+        T = ThermoBT_TvsR_spln(R, above70K=above70K)
+    elif probe_type in ["Mobile HT"]: # reference HT C100-PT100
+        #T = ThermoHT_TvsR_root(R, above70K=above70K, T_dflt=T_dflt)
+        T = ThermoHT_TvsR_spln(R, above70K=above70K)
+    elif probe_type in ["NICO BT CAL"]: # Thermo NICO
+        T = ThermoNICOCAL_TvsR(R)
+    elif probe_type in ["NICO BT"]:     # Thermo NICO
+        T = ThermoNICO_TvsR(R)
+    elif probe_type in ["PT100"]:       # PT100 seule
+        T = PT100_TvsR(R)
+    elif probe_type in ["Mobile BM"]:   # Mobile BM BT RuO2 C100 PT100, (a utiliser uniquement a basse temperature pour les thermometres mobiles)
+        T = ThermoBT_TvsR(R)
+    # ---  --- #
+    return T
 
 
 

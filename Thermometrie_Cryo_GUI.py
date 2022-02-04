@@ -17,7 +17,8 @@ sys.path.append('./')
 
 from lib.Miscellaneous              import getIPFromTxt, fixpath
 from lib.PyQt_miscellaneous         import QHLine, QVLine
-from lib.Conversion_functions       import PT100_TvsR, ThermoBT_TvsR, ThermoNICO_TvsR, PT100_RvsT, C100_RvsT, RuO2_RvsT, ThermoBT_RvsT, ThermoHT_RvsT, ThermoNICOCAL_TvsR, ThermoBT_TvsR_spln, ThermoHT_TvsR_spln
+#from lib.Conversion_functions       import PT100_TvsR, ThermoBT_TvsR, ThermoNICO_TvsR, PT100_RvsT, C100_RvsT, RuO2_RvsT, ThermoBT_RvsT, ThermoHT_RvsT, ThermoNICOCAL_TvsR, ThermoBT_TvsR_spln, ThermoHT_TvsR_spln
+from lib.Conversion_functions       import convert_RtoT
 from lib.ResistanceProbe_class      import ResistanceProbe
 from lib.MyRunningAnimation_class   import MyRunningAnimation
 from lib.Buffer_class               import Buffer
@@ -710,30 +711,7 @@ class ThermometerMonitoring(QWidget):
             print('Error: in convertResToTemp, the probe type is not valid.')
             return None
         # ---  --- #
-        if   probe_type in ["Mobile BT"]: # reference BT RuO2 C100 PT100, (pour le moment, ne l'utiliser qu'a haute temperature)
-            #try:
-            #    T = scipy.optimize.newton( (lambda T:ThermoBTRvsT(T)-res) , 200 if above70K else 0.02)
-            #except RuntimeError:
-            #    print('RuntimeError in convertResToTemp: no value found with scipy.optimize.newton.')
-            #    T = 500
-            # ---
-            T = ThermoBT_TvsR_spln(res, above70K=above70K)
-        elif probe_type in ["Mobile HT"]: # reference HT C100-PT100
-            #try:
-            #    T = scipy.optimize.newton( (lambda T:ThermoHT_RvsT(T)-res) , 200 if above70K else 2)
-            #except RuntimeError:
-            #    print('RuntimeError in convertResToTemp: no value found with scipy.optimize.newton.')
-            #    T = 500
-            # ---
-            T = ThermoHT_TvsR_spln(res, above70K=above70K)
-        elif probe_type in ["NICO BT CAL"]: # Thermo NICO
-            T = ThermoNICOCAL_TvsR(res)
-        elif probe_type in ["NICO BT"]: # Thermo NICO
-            T = ThermoNICO_TvsR(res)
-        elif probe_type in ["PT100"]: # PT100 seule
-            T = PT100_TvsR(res)
-        elif probe_type in ["Mobile BM"]: # Mobile BM BT RuO2 C100 PT100, (a utiliser uniquement a basse temperature pour les thermometres mobiles)
-            T = ThermoBT_TvsR(res)
+        T = convert_RtoT(res, probe_type=probe_type, above70K=above70K, verbose=self.verbose) # "convert_RtoT" from Conversion_functions in lib directory
         # ---  --- #
         return T
 
